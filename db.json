@@ -1,0 +1,123 @@
+{
+  "medicines": [
+    {
+      "id": "1",
+      "name": "Paracetamol 500mg",
+      "category": "Tablets",
+      "quantity": 120,
+      "price": 25,
+      "expiry": "Dec 2027",
+      "status": "Available"
+    },
+    {
+      "id": "2",
+      "name": "Amoxicillin 250mg",
+      "category": "Capsules",
+      "quantity": 45,
+      "price": 80,
+      "expiry": "Aug 2027",
+      "status": "Available"
+    },
+    {
+      "id": "3",
+      "name": "Cough Syrup",
+      "category": "Syrup",
+      "quantity": 12,
+      "price": 120,
+      "expiry": "Nov 2026",
+      "status": "Low Stock"
+    },
+    {
+      "id": "4",
+      "name": "Vitamin D3",
+      "category": "Tablets",
+      "quantity": 75,
+      "price": 150,
+      "expiry": "Jan 2028",
+      "status": "Available"
+    },
+    {
+      "id": "l_2p6WhDGpk",
+      "name": "Paracetamol 500mg",
+      "category": "Tablets",
+      "quantity": 50,
+      "price": 100,
+      "expiry": "Dec 2026",
+      "status": "Available"
+    },
+    {
+      "id": "ZAkefJaCsdU",
+      "name": "Vitamin B12",
+      "category": "Tablets",
+      "quantity": 75,
+      "price": 200,
+      "expiry": "Dec 2027",
+      "status": "Available"
+    },
+    {
+      "id": "VbiwUh_Ay8s",
+      "name": "Vicks vapourub",
+      "category": "Ointments & Creams",
+      "quantity": 50,
+      "price": 200,
+      "expiry": "Aug 2027",
+      "status": "Available"
+    },
+    {
+      "id": "4hz0ur3xL2c",
+      "name": "Paracetamol 500mg",
+      "category": "Tablets",
+      "quantity": 25,
+      "price": 50,
+      "expiry": "Dec 2026",
+      "status": "Available"
+    }
+  ],
+
+  "sales": [
+  {
+    "id": 1,
+    "day": "Monday",
+    "medicinesSold": 24,
+    "earnings": 3200
+  },
+  {
+    "id": 2,
+    "day": "Tuesday",
+    "medicinesSold": 31,
+    "earnings": 4100
+  },
+  {
+    "id": 3,
+    "day": "Wednesday",
+    "medicinesSold": 18,
+    "earnings": 2750
+  },
+  {
+    "id": 4,
+    "day": "Thursday",
+    "medicinesSold": 35,
+    "earnings": 4800
+  },
+  {
+    "id": 5,
+    "day": "Friday",
+    "medicinesSold": 29,
+    "earnings": 3900
+  },
+  {
+    "id": 6,
+    "day": "Saturday",
+    "medicinesSold": 42,
+    "earnings": 6100
+  },
+  {
+    "id": 7,
+    "day": "Sunday",
+    "medicinesSold": 27,
+    "earnings": 3500
+  }
+],
+
+  "$schema": "./node_modules/json-server/schema.json"
+}
