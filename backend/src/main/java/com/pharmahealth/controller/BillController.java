@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/api/bills")
 @Tag(name = "Billing & Payments", description = "Customer invoices, payment records, and financial history")

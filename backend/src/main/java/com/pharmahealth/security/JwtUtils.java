@@ -9,7 +9,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 
 @Component
@@ -22,8 +25,22 @@ public class JwtUtils {
     @Value("${pharmahealth.app.jwtExpirationMs}")
     private int jwtExpirationMs;
 
+    // Accepts a base64 secret of at least 256 bits; any other value is hashed into a 256-bit key
     private Key key() {
-        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret));
+        byte[] secret;
+        try {
+            secret = Decoders.BASE64.decode(jwtSecret);
+        } catch (RuntimeException e) {
+            secret = jwtSecret.getBytes(StandardCharsets.UTF_8);
+        }
+        if (secret.length < 32) {
+            try {
+                secret = MessageDigest.getInstance("SHA-256").digest(jwtSecret.getBytes(StandardCharsets.UTF_8));
+            } catch (NoSuchAlgorithmException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+        return Keys.hmacShaKeyFor(secret);
     }
 
     public String generateJwtToken(Authentication authentication) {

@@ -5,8 +5,8 @@ import com.pharmahealth.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.dao.DataAccessException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -44,38 +44,27 @@ public class DataInitializer implements CommandLineRunner {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+    @Value("${pharmahealth.app.adminPassword}")
+    private String adminPassword;
+
+    @Value("${pharmahealth.app.seedDemoData}")
+    private boolean seedDemoData;
 
     @Override
     public void run(String... args) {
         try {
-            ensureSchemaUpdates();
             initRoles();
             initFixedAdminAccount();
             initCategories();
             initDemoMedicines();
-            initDemoCustomers();
-            initDemoOrdersAndBills();
-            initDemoSupportTickets();
+            // Demo customer accounts, orders and tickets are for local development only
+            if (seedDemoData) {
+                initDemoCustomers();
+                initDemoOrdersAndBills();
+                initDemoSupportTickets();
+            }
         } catch (Exception e) {
             logger.error("Error during database demo data initialization: {}", e.getMessage(), e);
-        }
-    }
-
-    private void ensureSchemaUpdates() {
-        try {
-            jdbcTemplate.execute("ALTER TABLE medicines MODIFY COLUMN image_url LONGTEXT");
-            logger.info("Successfully ensured medicines.image_url column is LONGTEXT");
-        } catch (DataAccessException e) {
-            logger.debug("Schema migration notice for medicines.image_url: {}", e.getMessage());
-        }
-
-        try {
-            jdbcTemplate.execute("ALTER TABLE order_items MODIFY COLUMN medicine_id BIGINT NULL");
-            logger.info("Successfully ensured order_items.medicine_id column is nullable");
-        } catch (DataAccessException e) {
-            logger.debug("Schema migration notice for order_items.medicine_id: {}", e.getMessage());
         }
     }
 
@@ -90,10 +79,13 @@ public class DataInitializer implements CommandLineRunner {
 
     private void initFixedAdminAccount() {
         if (!userRepository.existsByUsername("admin")) {
+            if ("admin123".equals(adminPassword)) {
+                logger.warn("Admin account created with the default password. Set ADMIN_PASSWORD before deploying publicly.");
+            }
             User admin = new User(
                     "admin",
                     "admin@pharmahealth.com",
-                    passwordEncoder.encode("admin123"),
+                    passwordEncoder.encode(adminPassword),
                     "System Administrator"
             );
             admin.setPhone("+1-800-555-0100");

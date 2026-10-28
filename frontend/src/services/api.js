@@ -5,8 +5,25 @@ const API_BASE_URL = (raw.startsWith('http') ? raw : `https://${raw}`).replace(/
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 15000,
+  // Free-tier backends sleep when idle and can take about a minute to wake up
+  timeout: 70000,
 });
+
+// Retry idempotent requests once when the backend is waking up or briefly unavailable
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const config = error.config;
+    const status = error.response?.status;
+    const retryable = !error.response || status === 502 || status === 503 || status === 504;
+    if (config && config.method === 'get' && retryable && !config._retried) {
+      config._retried = true;
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      return api(config);
+    }
+    return Promise.reject(error);
+  }
+);
 
 api.interceptors.request.use(
   (config) => {

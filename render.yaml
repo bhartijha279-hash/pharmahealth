@@ -1,5 +1,6 @@
+# Render Blueprint: Spring Boot backend only.
+# Frontend is hosted on Vercel (see frontend/vercel.json), database on Supabase (PostgreSQL).
 services:
-  # Service 1: Spring Boot Backend Web Service
   - type: web
     name: pharmahealth-backend
     env: docker
@@ -13,34 +14,29 @@ services:
         value: "8080"
       - key: SPRING_PROFILES_ACTIVE
         value: prod
-      # Aiven Cloud MySQL Database Configuration
+      # Supabase -> Connect -> "Session pooler" (IPv4). Format:
+      # jdbc:postgresql://aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require
       - key: SPRING_DATASOURCE_URL
-        value: jdbc:mysql://mysql-21-ayushpal-2c43.a.aivencloud.com:20661/defaultdb?sslMode=REQUIRED
+        sync: false
+      # Session pooler user, e.g. postgres.<project-ref>
       - key: SPRING_DATASOURCE_USERNAME
-        value: avnadmin
+        sync: false
       - key: SPRING_DATASOURCE_PASSWORD
-        sync: false # Enter your Aiven password in Render dashboard
+        sync: false
       - key: SPRING_JPA_HIBERNATE_DDL_AUTO
         value: update
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRATION
         value: "86400000"
-
-  # Service 2: Single Static Site Frontend (React / Vite)
-  - type: web
-    name: pharmahealth-frontend
-    env: static
-    buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: ./frontend/dist
-    envVars:
-      # Connects React frontend to deployed Spring Boot backend REST API
-      - key: VITE_API_BASE_URL
-        fromService:
-          type: web
-          name: pharmahealth-backend
-          property: host
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
+      # Password for the built-in "admin" account (only applied when the account is first created)
+      - key: ADMIN_PASSWORD
+        sync: false
+      # Your Vercel URL, e.g. https://pharmahealth.vercel.app (comma-separate several)
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: SEED_DEMO_DATA
+        value: "false"
+      # Keep the JVM inside the free instance's 512 MB
+      - key: JAVA_TOOL_OPTIONS
+        value: "-XX:MaxRAMPercentage=75 -XX:+UseSerialGC"

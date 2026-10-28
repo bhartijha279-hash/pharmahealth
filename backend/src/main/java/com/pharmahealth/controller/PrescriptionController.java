@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/api/prescriptions")
 @Tag(name = "Prescription Management", description = "Prescription upload, verification, and workflow")

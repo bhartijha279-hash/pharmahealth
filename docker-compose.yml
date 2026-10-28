@@ -1,21 +1,18 @@
 services:
 
-  mysql-db:
-    image: mysql:8.0
-    container_name: pharmahealth_mysql
+  postgres-db:
+    image: postgres:16-alpine
+    container_name: pharmahealth_postgres
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: defaultdb
-      MYSQL_USER: pharma_user
-      MYSQL_PASSWORD: pharma_password
-    ports:
-      - "3306:3306"
+      POSTGRES_DB: pharmahealth
+      POSTGRES_USER: pharma_user
+      POSTGRES_PASSWORD: pharma_password
+    # Not published to the host, to avoid clashing with a local database; the backend reaches it on the compose network
     volumes:
-      - mysql_data:/var/lib/mysql
-      - ./database.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      test: ["CMD-SHELL", "pg_isready -U pharma_user -d pharmahealth"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -30,14 +27,17 @@ services:
     ports:
       - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/defaultdb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/pharmahealth
       SPRING_DATASOURCE_USERNAME: pharma_user
       SPRING_DATASOURCE_PASSWORD: pharma_password
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      JWT_SECRET: 9a618248b64db62d15b300a07b0058e10b43631ff1ac15d1b777e7b92dec68d9
+      JWT_SECRET: ${JWT_SECRET:-local-dev-only-jwt-secret-change-me}
       JWT_EXPIRATION: 86400000
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      SEED_DEMO_DATA: "true"
+      ALLOWED_ORIGINS: http://localhost:3000,http://localhost:5173
     depends_on:
-      mysql-db:
+      postgres-db:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/public/health"]
@@ -59,4 +59,4 @@ services:
         condition: service_healthy
 
 volumes:
-  mysql_data:
+  postgres_data:

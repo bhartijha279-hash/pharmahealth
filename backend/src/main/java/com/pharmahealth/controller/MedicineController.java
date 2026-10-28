@@ -21,7 +21,6 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/api/medicines")
 @Tag(name = "Medicine Management", description = "Admin & Pharmacist inventory and medicine CRUD endpoints")
@@ -104,13 +103,7 @@ public class MedicineController {
             return ResponseEntity.notFound().build();
         }
 
-        // 1. Ensure order_items.medicine_id column allows NULL in MySQL
-        try {
-            jdbcTemplate.execute("ALTER TABLE order_items MODIFY COLUMN medicine_id BIGINT NULL");
-        } catch (DataAccessException ignored) {
-        }
-
-        // 2. Direct SQL update to decouple any order items while preserving medication names
+        // Direct SQL update to decouple any order items while preserving medication names
         try {
             jdbcTemplate.update(
                     "UPDATE order_items SET medicine_id = NULL, medicine_name = COALESCE(medicine_name, ?) WHERE medicine_id = ?",

@@ -1,6 +1,6 @@
 # PharmaHealth 💊🏥
 
-PharmaHealth is a comprehensive modern pharmaceutical and healthcare management platform built with Spring Boot (Java), React, MySQL, JWT Authentication, and Docker.
+PharmaHealth is a comprehensive modern pharmaceutical and healthcare management platform built with Spring Boot (Java), React, PostgreSQL, JWT Authentication, and Docker.
 
 ---
 
@@ -11,7 +11,7 @@ PharmaHealth is a comprehensive modern pharmaceutical and healthcare management 
   - Spring Boot 3.3.x (Spring Web, Spring Security, Spring Data JPA)
   - Maven
   - JWT Authentication & Authorization (`io.jsonwebtoken`)
-  - MySQL Database connector & Hibernate ORM
+  - PostgreSQL (Supabase in production) & Hibernate ORM
   - RESTful APIs with Swagger/OpenAPI documentation
 - **Frontend**:
   - React 18+ (Vite)
@@ -22,7 +22,7 @@ PharmaHealth is a comprehensive modern pharmaceutical and healthcare management 
   - High-performance responsive static landing & showcase page
 - **DevOps & Containers**:
   - Docker & Docker Compose
-  - Render Deployment Blueprint (`render.yaml`)
+  - Hosting: Vercel (frontend), Render (backend, `render.yaml`), Supabase (PostgreSQL)
   - GitHub Actions CI/CD (`.github/workflows/ci.yml`)
 
 ---
@@ -41,17 +41,17 @@ PharmaHealth/
 ├── frontend/                    # React + Vite + Bootstrap application
 │   ├── src/                     # Components, pages, services, styling
 │   ├── package.json             # NPM dependencies
+│   ├── vercel.json              # Vercel deployment config
 │   └── Dockerfile               # Frontend container definition
 ├── static-page/                 # Static marketing / showcase landing page
 │   ├── index.html
 │   ├── css/style.css
 │   └── assets/
 ├── .gitignore                   # Multi-language git ignore
-├── database.sql                 # MySQL schema creation and seed data
 ├── docker-compose.yml           # Multi-service local environment setup
 ├── Dockerfile                   # Multi-stage production container build
 ├── README.md                    # Project documentation
-└── render.yaml                  # Render cloud deployment blueprint
+└── render.yaml                  # Render blueprint for the backend
 ```
 
 ---
@@ -63,7 +63,7 @@ PharmaHealth/
 - **Docker & Docker Compose** (Recommended for full-stack run)
 - **Java 21+** & **Maven**
 - **Node.js 20+** & **npm**
-- **MySQL 8.0**
+- **PostgreSQL 16** (only if running the backend outside Docker)
 
 ### 2. Run with Docker Compose (Fastest)
 
@@ -73,7 +73,9 @@ docker-compose up --build
 
 - **Backend API**: http://localhost:8080
 - **Frontend App**: http://localhost:3000
-- **MySQL**: localhost:3306
+- **PostgreSQL**: inside the compose network only (not published to the host)
+
+The backend creates the tables and seeds demo data on first start.
 
 ### 3. Running Backend Locally
 
@@ -82,7 +84,7 @@ cd backend
 mvn spring-boot:run
 ```
 
-The Spring Boot backend connects to MySQL with credentials defined in `application.properties`.
+By default the backend connects to `jdbc:postgresql://localhost:5432/pharmahealth` (user `pharma_user`, password `pharma_password`). Override with the `SPRING_DATASOURCE_*` variables; see `backend/.env.example`.
 
 ### 4. Running Frontend Locally
 
@@ -96,36 +98,38 @@ Visit [http://localhost:5173](http://localhost:5173).
 
 ---
 
-## ☁️ Deploying on Render with Aiven MySQL Database
+## ☁️ Deploying (Supabase + Render + Vercel, all free tiers)
 
-### 1. Set up Aiven MySQL Database
-1. Go to [Aiven Console](https://console.aiven.io/) and create a free MySQL service (e.g., `mysql-pharmahealth`).
-2. Once the service is running, open the **Overview** tab:
-   - Note down **Host**, **Port**, **User** (`avnadmin`), and **Password**.
-   - Note down the **Service URI**.
-3. Initialize the schema & seed data:
-   - Open Aiven's web **Query Editor** (or connect via MySQL Workbench / DBeaver / CLI using the Service URI).
-   - Run the script contents from [`database.sql`](file:///c:/PharmaHealth/database.sql).
+Set these up in order. Each step needs a value from the previous one.
 
-### 2. Connect Backend to Aiven on Render
-When deploying the blueprint via `render.yaml` or setting environment variables on the Render Dashboard for `pharmahealth-backend`:
+### 1. Database: Supabase
+1. Create a project at [supabase.com](https://supabase.com/dashboard) and save the database password.
+2. Open **Connect** and copy the **Session pooler** connection details (host `aws-0-<region>.pooler.supabase.com`, port `5432`, user `postgres.<project-ref>`). Use the session pooler: the direct connection needs IPv6, which Render does not support.
+3. No SQL to run. The backend creates the tables on first start.
 
-| Environment Variable | Example Value | Description |
-|---|---|---|
-| `SPRING_DATASOURCE_URL` | `jdbc:mysql://<AIVEN_HOST>:<AIVEN_PORT>/defaultdb?sslMode=REQUIRED` | Aiven JDBC URL with SSL enabled |
-| `SPRING_DATASOURCE_USERNAME` | `avnadmin` | Default Aiven administrative user |
-| `SPRING_DATASOURCE_PASSWORD` | `<your-aiven-password>` | Generated Aiven password |
-| `JWT_SECRET` | *(Auto-generated or custom 64-char key)* | Secret for signing auth tokens |
-| `SPRING_PROFILES_ACTIVE` | `prod` | Production Spring profile |
+### 2. Backend: Render
+1. In [Render](https://dashboard.render.com/), choose **New -> Blueprint** and connect this repository. It reads [`render.yaml`](render.yaml) and creates the `pharmahealth-backend` web service.
+2. Fill in the variables it asks for:
 
-### 3. Deploy via Blueprint on Render
-1. Go to [Render Dashboard](https://dashboard.render.com/) -> **New** -> **Blueprint**.
-2. Connect your repository: `https://github.com/ayushpalg46/PharmaHealth.git`.
-3. Render reads [`render.yaml`](file:///c:/PharmaHealth/render.yaml) automatically:
-   - Sets up the Spring Boot Web Service (`pharmahealth-backend`).
-   - Sets up the Single Unified React Frontend (`pharmahealth-frontend`).
-4. Enter your Aiven password when prompted for `SPRING_DATASOURCE_PASSWORD`.
-5. Click **Apply** to deploy!
+| Variable | Value |
+|---|---|
+| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require` |
+| `SPRING_DATASOURCE_USERNAME` | `postgres.<project-ref>` |
+| `SPRING_DATASOURCE_PASSWORD` | your Supabase database password |
+| `ADMIN_PASSWORD` | a strong password for the `admin` account |
+| `ALLOWED_ORIGINS` | your Vercel URL, e.g. `https://pharmahealth.vercel.app` (fill in after step 3, then redeploy) |
+
+`JWT_SECRET` is generated automatically, and demo customers/orders are turned off (`SEED_DEMO_DATA=false`).
+
+3. When it's live, `https://<service>.onrender.com/api/public/health` should return `"status":"UP"`.
+
+> The free Render instance sleeps after 15 minutes without traffic and takes about a minute to wake. The frontend waits and retries, so the first load after a quiet period is just slow.
+
+### 3. Frontend: Vercel
+1. In [Vercel](https://vercel.com/new), import this repository.
+2. Set **Root Directory** to `frontend` (build settings come from [`frontend/vercel.json`](frontend/vercel.json)).
+3. Add the environment variable `VITE_API_BASE_URL` = `https://<service>.onrender.com/api`.
+4. Deploy, then put the resulting URL into `ALLOWED_ORIGINS` on Render.
 
 ---
 
@@ -133,10 +137,12 @@ When deploying the blueprint via `render.yaml` or setting environment variables 
 
 | Role | Username | Password |
 |---|---|---|
-| **Admin** | `admin` | `admin123` |
+| **Admin** | `admin` | `admin123` locally; in production, the `ADMIN_PASSWORD` you set |
 | **Customer** | `rohit.sharma` | `password123` |
 | **Customer** | `ananya.verma` | `password123` |
 | **Customer** | `rahul.mehta` | `password123` |
+
+The customer accounts are demo data and exist only when `SEED_DEMO_DATA=true` (the default for local and Docker runs).
 
 Additional admin/pharmacist accounts can be created by an admin from the dashboard (`POST /api/users/create-admin`).
 
